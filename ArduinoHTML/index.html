@@ -1,0 +1,66 @@
+<html>
+  <head>
+    <title>MQTT Tutorial</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js" type="text/javascript"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  </head>
+
+  <body>
+    <button type="button" id="greenLed">Green Led On</button>
+    <input type="range" id="redLed" min="0" max="255" value="0" />
+  </body>
+
+  <script>
+    var topic = "Aididalam/data";
+    var connection = false;
+    // Create a client instance
+    client = new Paho.MQTT.Client("broker.hivemq.com", 8000, "clientId");
+    // set callback handlers
+    client.onConnectionLost = onConnectionLost;
+    client.onMessageArrived = onMessageArrived;
+    // connect the client
+    client.connect({ onSuccess: onConnect });
+    // called when the client connects
+    function onConnect() {
+      // Once a connection has been made, make a subscription and send a message.
+      connection = true;
+      console.log("onConnect");
+      client.subscribe(topic);
+    }
+
+    // called when the client loses its connection
+    function onConnectionLost(responseObject) {
+      if (responseObject.errorCode !== 0) {
+        console.log("onConnectionLost:" + responseObject.errorMessage);
+        connection = false;
+        client.connect({ onSuccess: onConnect });
+      }
+    }
+    // called when a message arrives
+    function onMessageArrived(message) {
+      console.log("onMessageArrived:" + message.payloadString);
+    }
+
+    $("#greenLed").click(function () {
+      if ($("#greenLed").text() == "Green Led Off" && connection) {
+        message = new Paho.MQTT.Message("ledgreen1");
+        message.destinationName = topic;
+        client.send(message);
+        $("#greenLed").text("Green Led On");
+      } else if ($("#greenLed").text() == "Green Led On" && connection) {
+        message = new Paho.MQTT.Message("ledgreen0");
+        message.destinationName = topic;
+        client.send(message);
+        $("#greenLed").html("Green Led Off");
+      }
+    });
+
+    $("#redLed").on("change", function () {
+      if (connection) {
+        message = new Paho.MQTT.Message("ledred" + $("#redLed").val());
+        message.destinationName = topic;
+        client.send(message);
+      }
+    });
+  </script>
+</html>
